@@ -1,0 +1,7 @@
+{
+  "name": "Pomodoro [FocusFlow]",
+  "description": "A premium, customizable Pomodoro timer with task management, statistics, and theme switching designed for deep work sessions.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
