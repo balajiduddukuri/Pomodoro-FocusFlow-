@@ -67,7 +67,8 @@ const App: React.FC = () => {
     const timeMap = {
       'pomodoro': settings.pomodoroTime,
       'shortBreak': settings.shortBreakTime,
-      'longBreak': settings.longBreakTime
+      'longBreak': settings.longBreakTime,
+      'custom': settings.customTime
     };
     setMode(newMode);
     setTimeLeft(timeMap[newMode] * 60);
@@ -80,8 +81,9 @@ const App: React.FC = () => {
         if(mode === 'pomodoro') setTimeLeft(settings.pomodoroTime * 60);
         if(mode === 'shortBreak') setTimeLeft(settings.shortBreakTime * 60);
         if(mode === 'longBreak') setTimeLeft(settings.longBreakTime * 60);
+        if(mode === 'custom') setTimeLeft(settings.customTime * 60);
     }
-  }, [settings.pomodoroTime, settings.shortBreakTime, settings.longBreakTime, mode, isActive]);
+  }, [settings.pomodoroTime, settings.shortBreakTime, settings.longBreakTime, settings.customTime, mode, isActive]);
 
   useEffect(() => {
     if (isActive && timeLeft > 0) {
@@ -102,7 +104,12 @@ const App: React.FC = () => {
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
     const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    document.title = `${timeString} - ${mode === 'pomodoro' ? 'Focus' : 'Break'}`;
+    let modeLabel = 'Focus';
+    if (mode === 'shortBreak') modeLabel = 'Short Break';
+    if (mode === 'longBreak') modeLabel = 'Long Break';
+    if (mode === 'custom') modeLabel = 'Custom';
+    
+    document.title = `${timeString} - ${modeLabel}`;
   }, [timeLeft, mode]);
 
   const handleTimerComplete = () => {
@@ -138,9 +145,12 @@ const App: React.FC = () => {
         if (settings.autoStartBreaks) setIsActive(true);
       }
     } else {
-      // Break over, back to work
-      switchMode('pomodoro');
-      if (settings.autoStartPomodoros) setIsActive(true);
+      // Break/Custom over, back to work logic could be added here, currently defaulting to stay on mode or manual switch
+      // Standard flow usually suggests going back to Pomodoro
+      if (mode !== 'custom') {
+          switchMode('pomodoro');
+          if (settings.autoStartPomodoros) setIsActive(true);
+      }
     }
   };
 
@@ -198,14 +208,18 @@ const App: React.FC = () => {
     
     if (mode === 'pomodoro') return 'bg-pomo';
     if (mode === 'shortBreak') return 'bg-short';
-    return 'bg-long';
+    if (mode === 'longBreak') return 'bg-long';
+    return 'bg-custom';
   };
 
   const getTotalTime = () => {
       if(mode === 'pomodoro') return settings.pomodoroTime * 60;
       if(mode === 'shortBreak') return settings.shortBreakTime * 60;
-      return settings.longBreakTime * 60;
+      if(mode === 'longBreak') return settings.longBreakTime * 60;
+      return settings.customTime * 60;
   }
+
+  const modes: TimerMode[] = ['pomodoro', 'shortBreak', 'longBreak', 'custom'];
 
   return (
     <div className={`min-h-screen transition-colors duration-500 ${getBgColor()} flex flex-col items-center py-8 px-4`}>
@@ -213,111 +227,152 @@ const App: React.FC = () => {
       <header className="w-full max-w-2xl flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                <span className="text-white font-bold">F</span>
+                <span className="text-white font-bold" aria-hidden="true">F</span>
             </div>
             <h1 className="text-white font-bold text-xl tracking-tight hidden sm:block">FocusFlow</h1>
         </div>
         <div className="flex items-center gap-3">
-            <button onClick={() => setIsStatsOpen(true)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-all backdrop-blur-sm">
+            <button 
+                onClick={() => setIsStatsOpen(true)} 
+                className="p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-all backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white"
+                aria-label="View Statistics"
+            >
                 <BarChart2 size={20} />
             </button>
-            <button onClick={() => setIsSettingsOpen(true)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-all backdrop-blur-sm">
+            <button 
+                onClick={() => setIsSettingsOpen(true)} 
+                className="p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-all backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white"
+                aria-label="Open Settings"
+            >
                 <SettingsIcon size={20} />
             </button>
-            <button onClick={cycleTheme} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-all backdrop-blur-sm">
+            <button 
+                onClick={cycleTheme} 
+                className="p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-all backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white"
+                aria-label={`Current theme: ${theme}. Click to switch theme.`}
+            >
                 {theme === 'light' ? <Sun size={20} /> : theme === 'dark' ? <Moon size={20} /> : <Zap size={20} />}
             </button>
         </div>
       </header>
 
-      {/* Dashboard Widget (Clock & Weather) */}
-      <DashboardWidget />
+      {/* Main Layout Container */}
+      <div className={`
+          w-full max-w-6xl flex transition-all duration-500
+          ${settings.layoutMode === 'side-by-side' ? 'flex-col lg:flex-row lg:items-start lg:justify-center lg:gap-12' : 'flex-col items-center gap-8'}
+      `}>
+          
+          {/* Left Column (Timer & Info) */}
+          <div className="flex flex-col items-center w-full max-w-md">
+            
+            <DashboardWidget />
 
-      {/* Main Card */}
-      <main className="w-full max-w-md bg-card/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 mb-8 transition-colors duration-300">
-        
-        {/* Mode Switcher */}
-        <div className="flex bg-input p-1 rounded-full mb-8 relative">
-          <div 
-             className={`absolute h-[calc(100%-8px)] top-1 rounded-full bg-card shadow-sm transition-all duration-300 ease-out`}
-             style={{
-                 left: mode === 'pomodoro' ? '4px' : mode === 'shortBreak' ? '33.33%' : '66.66%',
-                 width: 'calc(33.33% - 4px)'
-             }}
-          />
-          {(['pomodoro', 'shortBreak', 'longBreak'] as TimerMode[]).map((m) => (
-            <button
-              key={m}
-              onClick={() => { switchMode(m); playClickSound(); }}
-              className={`flex-1 relative z-10 py-2 text-sm font-bold rounded-full transition-colors ${mode === m ? 'text-primary' : 'text-secondary hover:text-primary'}`}
+            {/* Main Timer Card */}
+            <main className="w-full bg-card/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 mb-8 transition-colors duration-300">
+                {/* Mode Switcher */}
+                <div 
+                className="flex bg-input p-1 rounded-full mb-8 relative"
+                role="tablist"
+                aria-label="Timer Mode Selection"
+                >
+                <div 
+                    className={`absolute h-[calc(100%-8px)] top-1 rounded-full bg-card shadow-sm transition-all duration-300 ease-out`}
+                    style={{
+                        left: `calc(${modes.indexOf(mode) * 25}% + 4px)`,
+                        width: 'calc(25% - 8px)'
+                    }}
+                />
+                {modes.map((m) => (
+                    <button
+                    key={m}
+                    role="tab"
+                    aria-selected={mode === m}
+                    onClick={() => { switchMode(m); playClickSound(); }}
+                    className={`flex-1 relative z-10 py-2 text-xs sm:text-sm font-bold rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pomo ${mode === m ? 'text-primary' : 'text-secondary hover:text-primary'}`}
+                    >
+                    {m === 'pomodoro' ? 'Pomodoro' : m === 'shortBreak' ? 'Short' : m === 'longBreak' ? 'Long' : 'Custom'}
+                    </button>
+                ))}
+                </div>
+
+                {/* Timer */}
+                <div className="flex flex-col items-center mb-8">
+                <CircularTimer 
+                    timeLeft={timeLeft} 
+                    totalTime={getTotalTime()} 
+                    isActive={isActive} 
+                    mode={mode}
+                    toggleTimer={toggleTimer}
+                />
+                </div>
+
+                {/* Controls */}
+                <div className="flex items-center justify-center gap-6">
+                    {/* Sound Toggle (Quick Access) */}
+                    <button 
+                        onClick={() => setSettings({...settings, soundEnabled: !settings.soundEnabled})}
+                        className="text-muted hover:text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pomo p-2 rounded-full"
+                        aria-label={settings.soundEnabled ? "Mute sound" : "Enable sound"}
+                    >
+                        {settings.soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                    </button>
+
+                    <button 
+                        onClick={toggleTimer}
+                        aria-label={isActive ? "Pause Timer" : "Start Timer"}
+                        className={`w-20 h-20 rounded-3xl flex items-center justify-center shadow-lg transform active:scale-95 transition-all text-white focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-card ${
+                            mode === 'pomodoro' ? 'bg-pomo hover:bg-pomo/90 focus:ring-pomo' : 
+                            mode === 'shortBreak' ? 'bg-short hover:bg-short/90 focus:ring-short' : 
+                            mode === 'longBreak' ? 'bg-long hover:bg-long/90 focus:ring-long' :
+                            'bg-custom hover:bg-custom/90 focus:ring-custom'
+                        }`}
+                    >
+                        {isActive ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" className="ml-1" />}
+                    </button>
+
+                    <button 
+                        onClick={isActive ? skipTimer : resetTimer}
+                        className="text-muted hover:text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pomo p-2 rounded-full"
+                        aria-label={isActive ? "Skip Timer" : "Reset Timer"}
+                    >
+                        {isActive ? <SkipForward size={24} /> : <RotateCcw size={24} />}
+                    </button>
+                </div>
+            </main>
+
+            {/* Stats/Goals Preview */}
+            <div 
+                className="text-white/80 font-medium mb-8 text-center"
+                role="progressbar"
+                aria-label="Daily Goal Progress"
+                aria-valuenow={pomodorosCompleted}
+                aria-valuemin={0}
+                aria-valuemax={settings.dailyGoal}
             >
-              {m === 'pomodoro' ? 'Pomodoro' : m === 'shortBreak' ? 'Short Break' : 'Long Break'}
-            </button>
-          ))}
-        </div>
-
-        {/* Timer */}
-        <div className="flex flex-col items-center mb-8">
-          <CircularTimer 
-            timeLeft={timeLeft} 
-            totalTime={getTotalTime()} 
-            isActive={isActive} 
-            mode={mode}
-            toggleTimer={toggleTimer}
-          />
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center justify-center gap-6">
-             {/* Sound Toggle (Quick Access) */}
-             <button 
-                 onClick={() => setSettings({...settings, soundEnabled: !settings.soundEnabled})}
-                 className="text-muted hover:text-primary transition-colors"
-             >
-                 {settings.soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
-             </button>
-
-             <button 
-                onClick={toggleTimer}
-                className={`w-20 h-20 rounded-3xl flex items-center justify-center shadow-lg transform active:scale-95 transition-all text-white ${
-                    mode === 'pomodoro' ? 'bg-pomo hover:bg-pomo/90' : 
-                    mode === 'shortBreak' ? 'bg-short hover:bg-short/90' : 
-                    'bg-long hover:bg-long/90'
-                }`}
-             >
-                {isActive ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" className="ml-1" />}
-             </button>
-
-             <button 
-                onClick={isActive ? skipTimer : resetTimer}
-                className="text-muted hover:text-primary transition-colors"
-            >
-                 {isActive ? <SkipForward size={24} /> : <RotateCcw size={24} />}
-             </button>
-        </div>
-      </main>
-
-      {/* Stats/Goals Preview */}
-      <div className="text-white/80 font-medium mb-8 text-center">
-          <p>#{pomodorosCompleted} / {settings.dailyGoal} Daily Goal</p>
-          <div className="w-64 h-1 bg-white/20 rounded-full mt-2 mx-auto overflow-hidden">
-             <div 
-                className="h-full bg-white transition-all duration-500" 
-                style={{width: `${Math.min((pomodorosCompleted / settings.dailyGoal) * 100, 100)}%`}}
-             />
+                <p>#{pomodorosCompleted} / {settings.dailyGoal} Daily Goal</p>
+                <div className="w-64 h-1 bg-white/20 rounded-full mt-2 mx-auto overflow-hidden">
+                    <div 
+                        className="h-full bg-white transition-all duration-500" 
+                        style={{width: `${Math.min((pomodorosCompleted / settings.dailyGoal) * 100, 100)}%`}}
+                    />
+                </div>
+            </div>
           </div>
-      </div>
 
-      {/* Task List */}
-      <TaskList 
-        tasks={tasks} 
-        activeTaskId={activeTaskId} 
-        onAddTask={addTask} 
-        onDeleteTask={deleteTask}
-        onToggleTask={toggleTask}
-        onSelectTask={setActiveTaskId}
-        onUpdateTask={updateTask}
-      />
+          {/* Right Column (Tasks) */}
+          <div className="w-full max-w-md">
+            <TaskList 
+                tasks={tasks} 
+                activeTaskId={activeTaskId} 
+                onAddTask={addTask} 
+                onDeleteTask={deleteTask}
+                onToggleTask={toggleTask}
+                onSelectTask={setActiveTaskId}
+                onUpdateTask={updateTask}
+            />
+          </div>
+
+      </div>
 
       {/* Modals */}
       <SettingsModal 

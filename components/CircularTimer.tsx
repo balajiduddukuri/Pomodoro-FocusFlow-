@@ -25,6 +25,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ timeLeft, totalTime, isAc
       case 'pomodoro': return 'text-pomo';
       case 'shortBreak': return 'text-short';
       case 'longBreak': return 'text-long';
+      case 'custom': return 'text-custom';
       default: return 'text-muted';
     }
   };
@@ -34,16 +35,32 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ timeLeft, totalTime, isAc
       case 'pomodoro': return 'stroke-pomo';
       case 'shortBreak': return 'stroke-short';
       case 'longBreak': return 'stroke-long';
+      case 'custom': return 'stroke-custom';
       default: return 'stroke-muted';
     }
   }
 
+  const getModeLabel = () => {
+    switch (mode) {
+      case 'pomodoro': return 'Focus time';
+      case 'shortBreak': return 'Short break';
+      case 'longBreak': return 'Long break';
+      case 'custom': return 'Custom timer';
+      default: return 'Timer';
+    }
+  }
+
   return (
-    <div className="relative flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-300" onClick={toggleTimer}>
+    <button 
+      onClick={toggleTimer}
+      className="relative flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-300 rounded-full focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-card focus:ring-pomo/50"
+      aria-label={`${isActive ? 'Pause' : 'Start'} ${getModeLabel()}, ${minutes} minutes and ${seconds} seconds remaining`}
+    >
       <svg
         height={radius * 2}
         width={radius * 2}
         className="rotate-[-90deg]"
+        aria-hidden="true"
       >
         <circle
           stroke="currentColor"
@@ -69,11 +86,11 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ timeLeft, totalTime, isAc
       </svg>
       <div className={`absolute text-5xl font-bold tracking-widest ${getColor()} select-none`}>
         {formattedTime}
-        <div className="text-sm font-medium text-center mt-2 tracking-normal opacity-70 uppercase">
+        <div className="text-sm font-medium text-center mt-2 tracking-normal opacity-70 uppercase" aria-hidden="true">
           {isActive ? 'Pause' : 'Start'}
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 

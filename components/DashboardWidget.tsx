@@ -77,23 +77,23 @@ const DashboardWidget: React.FC = () => {
   }, []);
 
   // Map WMO codes to Icons
-  const getWeatherIcon = (code: number) => {
+  const getWeatherInfo = (code: number) => {
     // 0: Clear sky
-    if (code === 0 || code === 1) return <Sun className="w-8 h-8 text-yellow-300 drop-shadow-sm" />;
+    if (code === 0 || code === 1) return { icon: <Sun className="w-8 h-8 text-yellow-300 drop-shadow-sm" aria-hidden="true" />, label: 'Sunny' };
     // 2-3: Cloudy
-    if (code === 2 || code === 3) return <Cloud className="w-8 h-8 text-white/80 drop-shadow-sm" />;
+    if (code === 2 || code === 3) return { icon: <Cloud className="w-8 h-8 text-white/80 drop-shadow-sm" aria-hidden="true" />, label: 'Cloudy' };
     // 45, 48: Fog
-    if (code === 45 || code === 48) return <CloudFog className="w-8 h-8 text-white/60" />;
+    if (code === 45 || code === 48) return { icon: <CloudFog className="w-8 h-8 text-white/60" aria-hidden="true" />, label: 'Foggy' };
     // 51-67: Drizzle/Rain
-    if (code >= 51 && code <= 67) return <CloudRain className="w-8 h-8 text-blue-200 drop-shadow-sm" />;
+    if (code >= 51 && code <= 67) return { icon: <CloudRain className="w-8 h-8 text-blue-200 drop-shadow-sm" aria-hidden="true" />, label: 'Rainy' };
     // 71-77: Snow
-    if (code >= 71 && code <= 77) return <CloudSnow className="w-8 h-8 text-white drop-shadow-sm" />;
+    if (code >= 71 && code <= 77) return { icon: <CloudSnow className="w-8 h-8 text-white drop-shadow-sm" aria-hidden="true" />, label: 'Snowy' };
     // 80-82: Showers
-    if (code >= 80 && code <= 82) return <CloudRain className="w-8 h-8 text-blue-200" />;
+    if (code >= 80 && code <= 82) return { icon: <CloudRain className="w-8 h-8 text-blue-200" aria-hidden="true" />, label: 'Rain Showers' };
     // 95-99: Thunderstorm
-    if (code >= 95) return <CloudLightning className="w-8 h-8 text-yellow-200" />;
+    if (code >= 95) return { icon: <CloudLightning className="w-8 h-8 text-yellow-200" aria-hidden="true" />, label: 'Thunderstorm' };
     
-    return <Sun className="w-8 h-8 text-yellow-300" />;
+    return { icon: <Sun className="w-8 h-8 text-yellow-300" aria-hidden="true" />, label: 'Sunny' };
   };
 
   const formatDate = (date: Date) => {
@@ -108,20 +108,24 @@ const DashboardWidget: React.FC = () => {
     <div className="w-full max-w-md mb-8 flex flex-col gap-5 animate-fade-in px-2">
         <div className="flex items-end justify-between text-white/95">
             <div>
-                <div className="text-5xl font-bold tracking-tight drop-shadow-md leading-none mb-1">{formatTime(currentTime)}</div>
-                <div className="text-sm font-medium opacity-90 uppercase tracking-widest drop-shadow-sm">{formatDate(currentTime)}</div>
+                <div className="text-5xl font-bold tracking-tight drop-shadow-md leading-none mb-1" aria-label={`Current time ${formatTime(currentTime)}`}>{formatTime(currentTime)}</div>
+                <div className="text-sm font-medium opacity-90 uppercase tracking-widest drop-shadow-sm" aria-label={`Current date ${formatDate(currentTime)}`}>{formatDate(currentTime)}</div>
             </div>
             
             <div className="flex flex-col items-end gap-1">
-                <div className="flex items-center gap-3 bg-black/10 px-4 py-2 rounded-2xl backdrop-blur-md border border-white/10 shadow-lg min-h-[56px]">
+                <div 
+                  className="flex items-center gap-3 bg-black/10 px-4 py-2 rounded-2xl backdrop-blur-md border border-white/10 shadow-lg min-h-[56px]"
+                  aria-live="polite"
+                >
                     {!weather && !loading && !error && <span className="text-xs font-medium">Updating...</span>}
-                    {loading && <Loader2 className="w-5 h-5 animate-spin opacity-70" />}
+                    {loading && <Loader2 className="w-5 h-5 animate-spin opacity-70" aria-label="Loading weather" />}
                     {error && <span className="text-xs font-medium opacity-80">No Weather</span>}
                     
                     {weather && (
                         <>
-                            {getWeatherIcon(weather.weatherCode)}
-                            <div className="text-2xl font-bold drop-shadow-md">{Math.round(weather.temperature)}°</div>
+                            {getWeatherInfo(weather.weatherCode).icon}
+                            <span className="sr-only">{getWeatherInfo(weather.weatherCode).label}</span>
+                            <div className="text-2xl font-bold drop-shadow-md" aria-label={`${Math.round(weather.temperature)} degrees celsius`}>{Math.round(weather.temperature)}°</div>
                         </>
                     )}
                 </div>

@@ -21,13 +21,22 @@ const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose, stats, totalSe
   const minutes = totalMinutes % 60;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="stats-title"
+    >
       <div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="p-4 border-b border-border flex justify-between items-center bg-input/30">
-          <h2 className="text-lg font-bold flex items-center gap-2 text-primary">
-            <BarChart2 size={20} /> Report
+          <h2 id="stats-title" className="text-lg font-bold flex items-center gap-2 text-primary">
+            <BarChart2 size={20} aria-hidden="true" /> Report
           </h2>
-          <button onClick={onClose} className="text-muted hover:text-primary">
+          <button 
+            onClick={onClose} 
+            className="text-muted hover:text-primary p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+            aria-label="Close report"
+          >
             <X size={24} />
           </button>
         </div>
@@ -45,7 +54,7 @@ const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose, stats, totalSe
             </div>
 
             <h3 className="text-md font-bold text-primary mb-4">Activity (Minutes)</h3>
-            <div className="h-64 w-full">
+            <div className="h-64 w-full" aria-label="Bar chart showing focus minutes for the last 7 days">
                 {data.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={data}>
